@@ -26,9 +26,11 @@ class SyncConfigFile:
     self._config = None
     self._configpath = None
     # This list is highest priority first
-    self._configlocs = ['./nisldapsync.conf',
+    self._configlocs = [
                         os.path.expanduser('~/.nisldapsync.conf'),
-                        '/etc/nisldapsync.conf']
+                        './nisldapsync.conf',
+                        '/etc/nisldapsync.conf'
+                       ]
   
   def _getConfig(self):
     if self._config is not None:
