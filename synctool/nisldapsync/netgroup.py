@@ -25,6 +25,8 @@ class NetgroupSync(base.BaseSync):
   def __init__(self, ldapbase, baseou, peopleou=None, maildomain=None):
     base.BaseSync.__init__(self, ldapbase, baseou, peopleou)
     self._netgroups = {}
+    self._l          = self._getLogger('netgroup')
+
 
   def _RawToTuple(self, data):
     m = constants.NETGROUP_TRIP_RE.findall(data)

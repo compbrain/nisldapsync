@@ -20,6 +20,7 @@
 
 # Standard Imports
 import logging
+import sys
 
 # Site Imports
 import nisldapsync
@@ -40,25 +41,30 @@ SYNC_MODS = {
 
 class MasterSync:
   def __init__(self):
+    self._l = logging.getLogger('ldapsync')
     self._config = None
+    self._l.debug('Instantiating Master Sync Object')
   
   def getConfig(self):
     if self._config is None:
+      self._l.debug('Reading Sync Config File')
       self._config = nisldapsync.syncconfigfile.SyncConfigFile()
 
   def syncobj(self, module):
     self.getConfig()
     if module not in SYNC_MODS:
-      return False
+      self._l.error('Attempted to create sync object for unsupported %s mod' % 
+                    (module))
+      sys.exit(255)
     # LDAP/Site Info retrival from the config file
     ldapbase = self._config.getLDAPConnectionInfo()['searchbase']
     mapbaseou = self._config.getLDAPLayout()['%sou' % module]
     maildomain = self._config.getSiteInfo()['maildomain']
     # Create the sync object
     sync_mod = SYNC_MODS[module]
-    print module
     sync_obj = sync_mod(ldapbase=ldapbase, baseou=mapbaseou,
                         maildomain=maildomain)
+    self._l.debug('Created %s sync object' % module)
     return sync_obj
 
   def getDiffDict(self, maptype=None):
@@ -69,25 +75,28 @@ class MasterSync:
       maptype = [maptype]
     elif type(maptype) == type([]):
       pass
+    self._l.info('Getting diff for maps %s' % (str(maptype)))
     # Collect changes that need to be made
     changedict = {}
     for map in maptype:
       obj = self.syncobj(map)
       changes = obj.generateMapChangeList()
       changedict[map] = changes
+      self._l.debug('Added %s %s changes to the list' % (len(changes), map))
     return changedict
 
   def applychangedict(self, changedict):
+    self._l.info('Beginning change application')
     for map in changedict:
+      self._l.info('Applying changes for %s' % map)
       for change in changedict[map]:
         change.apply()
 
   def main(self):
-    print 'main'
     changes = self.getDiffDict()
     self.applychangedict(changes)
 
 if __name__ == '__main__':
-  print 'name'
+  logging.basicConfig(level=logging.DEBUG) 
   ms = MasterSync()
   ms.main()

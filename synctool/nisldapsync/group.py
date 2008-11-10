@@ -28,6 +28,8 @@ class GroupSync(base.BaseSync):
     self._maildomain = maildomain
     self._usersyncobj = None
     self._groups = {}
+    self._l          = self._getLogger('group')
+
 
   def _RawToDict(self, data):
     m = constants.GROUP_DATA_RE.match(data)

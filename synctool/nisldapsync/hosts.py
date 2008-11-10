@@ -26,6 +26,8 @@ class HostsSync(base.BaseSync):
     base.BaseSync.__init__(self, ldapbase, baseou, peopleou)
     self._ips = []
     self._names = []
+    self._l          = self._getLogger('hosts')
+
 
   def _maproot(self):
     return '%s,%s' % (self._baseou, self._ldapbase)

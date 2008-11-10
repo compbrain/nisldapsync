@@ -40,12 +40,15 @@ class BaseSync:
     self._syncmodule = syncmodule
     self._chgmodule  = changemodule
     self._ldapcache  = None
+    self._l          = self._getLogger('base')
 
   def _GetNISMap(self, mapname):
+    self._l.debug('Getting %s NIS Map Data' % mapname)
     return nis.cat(mapname)
 
   def _populateLDAPCache(self):
     if self._ldapcache is None:
+      self._l.debug('Getting LDAP Cache')
       l = self._syncmodule.SyncLDAP()
       dn = '%s,%s' % (self._baseou, self._ldapbase)
       try:
@@ -55,6 +58,9 @@ class BaseSync:
       l.close()
       self._ldapcache = results
     return self._ldapcache
+
+  def _getLogger(self, mapname):
+    return logging.getLogger('ldap.mod-%s' % mapname)
 
   def _getServerCopy(self, dnquery):
     self._populateLDAPCache()
@@ -67,6 +73,7 @@ class BaseSync:
     assert False, 'Stub!'
   
   def generateMapChangeList(self, dodeletes=True):
+    self._l.debug('Generating changelist')
     changelist = []
     self._createcontainer(changelist)
     generated_list = []
@@ -84,6 +91,7 @@ class BaseSync:
     return changelist
     
   def generateDeletions(self, generated_dnlist):
+    self._l.debug('Generating deletions')
     changelist = []
     l = self._syncmodule.SyncLDAP()
     try:
@@ -100,6 +108,7 @@ class BaseSync:
     return changelist
 
   def generateAdd(self, record, list=None):
+    self._l.debug('Generating add for %s' % record[0])
     """ Create a Modify object for a record that does not exist in ldap
     Args:
      record -- A tuple like that returned from ldap.search
@@ -127,6 +136,7 @@ class BaseSync:
     # Get a modlist, if it has changes, add them to the changelist
     modlist = self._syncmodule.makeModlist(ldaprecord[1], nisrecord[1])
     if len(modlist) > 0:
+      self._l.debug('Generating diff for %s' % record[0])
       modify_obj = self._chgmodule.SyncMod(generated_dn, 'MOD', modlist)
       list.append(modify_obj)
 
@@ -155,6 +165,7 @@ class BaseSync:
       return attributes
 
   def _createcontainer(self, list):
+    self._l.debug('Creating container entry')
     """ Creates a Modify object for the container defined by _ContainerEntry
     If _ContainerEntry does not exist in ldap, it is created. If it is somehow
     incorrect, a diff will be created to fix it.

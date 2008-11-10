@@ -25,6 +25,7 @@ class PasswdSync(base.BaseSync):
     base.BaseSync.__init__(self, ldapbase, baseou, peopleou)
     self._users = {}
     self._maildomain = maildomain
+    self._l          = self._getLogger('passwd')
 
   def _RawToDict(self, data):
     (uid, passwd, uidnumber, gidnumber, gecos, home, shell) = data.split(':')
