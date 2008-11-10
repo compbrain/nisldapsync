@@ -21,6 +21,7 @@
 # Standard Imports
 import logging
 import sys
+from optparse import OptionParser
 
 # Site Imports
 import nisldapsync
@@ -93,10 +94,14 @@ class MasterSync:
         change.apply()
 
   def main(self):
-    changes = self.getDiffDict()
-    self.applychangedict(changes)
+    parser = OptionParser()
+    parser.add_option('-d', '--debug', dest='debuglvl', help='Debug Level')
+    parser.add_option('-a', '--all', dest='all', action='store_true',
+                      default=False, help='Sync all modules')
+    (options, args) = parser.parse_args()
+    parser.print_usage()
 
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.DEBUG) 
+  logging.basicConfig() 
   ms = MasterSync()
   ms.main()
