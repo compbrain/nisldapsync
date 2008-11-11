@@ -37,6 +37,7 @@ class SyncMod:
 
   def chgobj(self):
     return self._change
+
   def apply(self):
     print ' **** APPLYING CHANGE TO %s' % self._dn
     print ' **** TYPE: %s' % self._type
@@ -51,3 +52,6 @@ class SyncMod:
       print 'MMMM: %s' % (str(self._change))
       l.change(self._dn, self._change)
     l.close()
+
+  def dnentry(self):
+    return (self._dn, self._change)
