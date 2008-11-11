@@ -152,6 +152,9 @@ class Runner:
     else:
       self.applychangedict(changedict, pretend)
 
+  def remoteexec(self, modules=[]):
+    self._run('error', modules, False, False)
+
   def main(self):
     ''' Create a parser and handle user input '''
     parser = OptionParser()
