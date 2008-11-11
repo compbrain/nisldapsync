@@ -1,0 +1,100 @@
+#!/usr/bin/python
+
+# LDAP Replication Check 
+# Copyright (C) 2008 Will Nowak <wan@ccs.neu.edu>
+
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+import ldap
+import ldap.modlist
+import sys
+
+LDAP_BASE='dc=example,dc=com'
+MASTER='master.ldap.example.com'
+SLAVES='slave%d.ldap.example.com'
+NUM_SLAVES=3
+
+class Uinfo:
+  def __init__(self):
+    self._connection = None
+
+  def connect(self, server):
+    if self._connection is None:
+      self._connection = ldap.initialize('ldap://%s' % server)
+    return self._connection
+
+  def disconnect(self):
+    if self._connection is not None:
+      self._connection.unbind()
+    self._connection = None
+    return self._connection
+  
+
+  def objects(self, server):
+    self.disconnect()
+    try:
+      self.connect(server)
+      r = self._connection.search_s(LDAP_BASE, ldap.SCOPE_SUBTREE,
+                                    '(objectclass=*)', ['entryCSN'])
+      self.disconnect()
+      return r
+    except ldap.SERVER_DOWN:
+      return [None]
+  
+  def acomparetrees(self, t1, t2):
+    diffs = []
+    for rec in t1:
+      dn1 = rec[0]
+      entry1 = rec[1]
+      entry2 = None
+      for rec2 in t2:
+        if rec2[0] == dn1:
+          entry2 = rec2[1]
+          break
+      mod = ldap.modlist.modifyModlist(entry2, entry1)
+      diffs.append((dn1, mod))
+  def comparetrees(self, t1, t2):
+    t1.sort()
+    t2.sort()
+    return t1 != t2
+
+  def compare(self, listone, listtwo):
+    lena = len(listone)
+    lenb = len(listtwo)
+    if lena != lenb:
+      return (False, 'Wrong Count')
+    else:
+      diffs = self.comparetrees(listone, listtwo)
+      if not diffs:
+        return (True, 'Same Content')
+      else:
+        return (False, 'Content differs from master')
+
+  def testall(self):
+    masterobj = self.objects(MASTER)
+    print 'Found %d objects on master' % len(masterobj)
+    for i in range(1, NUM_SLAVES + 1):
+      slavehost = SLAVES % i
+      print 'Testing %s' % slavehost
+      res = self.compare(masterobj, self.objects(slavehost))
+      if res[0]:
+        print ' - %s' % res[1]
+      else:
+        print ' +++ ERR ++ %s' % res[1]
+
+u = Uinfo()
+u.testall()
+
