@@ -1,0 +1,119 @@
+#!/usr/bin/python
+
+# LDAP User Information Lookup Tool
+# Copyright (C) 2008 Will Nowak <wan@ccs.neu.edu>
+
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+import ldap
+import sys
+
+LDAP_BASE='dc=example,dc=com'
+LDAP_URI='ldap://cluster.ldap.example.com'
+ZIMBRA_URI='ldap://zimbra.example.com'
+
+class Uinfo:
+  def __init__(self):
+    self._connection = None
+
+  def connect(self):
+    if self._connection is None:
+      self._connection = ldap.initialize(LDAP_URI)
+    return self._connection
+  
+  def lookupuid(self, uid):
+    self.connect()
+    r = self._connection.search_s('ou=people,'+LDAP_BASE, ldap.SCOPE_ONELEVEL,
+                                  '(uid=%s)' % uid)
+    if len(r):
+      return r[0]
+    else:
+      return None
+  def unix_groups(self, dn):
+    groups = []
+    self.connect()
+    r = self._connection.search_s('ou=group,'+LDAP_BASE, ldap.SCOPE_ONELEVEL,
+                                  '(member=%s)' % dn, ['cn'])
+    for i in r:
+      (groupdn, groupinfo) = i
+      groups.append(groupinfo['cn'][0])
+    return groups
+
+  def has_zimbra(self, uid):
+    zc = ldap.initialize(ZIMBRA_URI)
+    r = zc.search_s('dc=zimbra,' + LDAP_BASE, ldap.SCOPE_SUBTREE,
+                    '(uid=%s)' % uid, ['zimbramailstatus'])
+    if not r:
+      return False
+    else:
+      return (r[0][1]['zimbraMailStatus'][0] == 'enabled')
+
+  def net_groups(self, dn):
+    groups = []
+    self.connect()
+    r = self._connection.search_s('ou=netgroup,'+LDAP_BASE, ldap.SCOPE_ONELEVEL,
+                                  '(member=%s)' % dn, ['cn'])
+    for i in r:
+      (groupdn, groupinfo) = i
+      groups.append(groupinfo['cn'][0])
+    return groups
+
+  def groupNameByNumber(self, gid):
+    self.connect()
+    r = self._connection.search_s('ou=group,'+LDAP_BASE, ldap.SCOPE_ONELEVEL,
+                                  '(gidNumber=%s)' % gid, ['cn'])
+    for i in r:
+      return r[0][1]['cn'][0]
+    else:
+      return None
+
+  def notfounderror(self, uid):
+    print 'The user "%s" could not be found' % uid
+    sys.exit(1)
+
+  def userlookup(self, uid):
+    ud = self.lookupuid(uid)
+    if ud is None:
+      self.notfounderror(uid)
+    else:
+      (dn, info) = ud
+      self.outputinfo(dn, info)
+
+  def outputinfo(self, dn, info):
+    unixgroups = self.unix_groups(dn)
+    netgroups  = self.net_groups(dn)
+    zimbra_status = self.has_zimbra(info['uid'][0])
+    print 'Username: %s' % info['uid'][0]
+    print 'Full Name: %s' % info['displayName'][0]
+    print 'E-Mail: %s' % info['mail'][0]
+    print 'Shell: %s' % info['loginShell'][0]
+    print 'UID: %s' % info['uidNumber'][0]
+    print 'GID: %s (%s)' % (info['gidNumber'][0],
+                            self.groupNameByNumber(info['gidNumber'][0]))
+    print 'Using Zimbra: %s' % (zimbra_status)
+    print '--------------'
+    print 'Unix Groups:'
+    print '  %s' % str(unixgroups)
+    print 'Netgroups:'
+    print '  %s' % str(netgroups)
+
+if len(sys.argv) == 2:
+  u = Uinfo()
+  u.userlookup(sys.argv[1])
+else:
+  print 'Usage: %s $USER_NAME' % sys.argv[0]
+  sys.exit(1)
+

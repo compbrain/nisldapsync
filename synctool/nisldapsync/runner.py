@@ -25,6 +25,7 @@ from ldif import LDIFWriter
 from optparse import OptionParser
 
 # Site Imports
+import appgroup
 import group
 import hosts
 import passwd
@@ -37,6 +38,7 @@ SYNC_MODS = {
              'passwd': passwd.PasswdSync,
              'hosts':hosts.HostsSync,
              'group':group.GroupSync,
+             'appgroup':appgroup.AppGroupSync,
              'automount':automount.AutomountSync,
             }
 
