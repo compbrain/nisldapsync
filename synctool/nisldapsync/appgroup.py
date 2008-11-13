@@ -116,19 +116,24 @@ class AppGroupSync(base.BaseSync):
     self._ProcessRawMap()
     for group in self._groups:
       generatedrecord = self._GroupToLDAPEntry(group)
-      records.append(generatedrecord)
+      if generatedrecord is not None:
+        records.append(generatedrecord)
     return records
 
   def _GroupToLDAPEntry(self, group_name):
     self._AddPrimaryUsersToGroup(group_name)
+    if not len(self._groups[group_name]['users']):
+      return None
     # Create DN for this group
     dn = 'cn=%s,%s,%s' % (group_name, self._baseou, self._ldapbase)
     # Prepare LDAP entry body
     entry = {}
-    entry['objectClass'] = ['top','groupOfNames']
+    entry['objectClass'] = ['top','groupOfNames','groupOfUniqueNames']
     entry['cn'] = [group_name]
     entry['member'] = []
+    entry['uniqueMember'] = []
     for uid in self._groups[group_name]['users']:
       udn = 'uid=%s,%s,%s' % (uid, self._peopleou, self._ldapbase)
       entry['member'].append(udn)
+      entry['uniqueMember'].append(udn)
     return (dn, entry)
