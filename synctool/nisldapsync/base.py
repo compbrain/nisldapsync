@@ -50,7 +50,10 @@ class BaseSync:
     if self._ldapcache is None:
       self._l.debug('Getting LDAP Cache')
       l = self._syncmodule.SyncLDAP()
-      dn = '%s,%s' % (self._baseou, self._ldapbase)
+      if len(self._baseou):
+        dn = '%s,%s' % (self._baseou, self._ldapbase)
+      else:
+        dn = self._ldapbase
       try:
         results = l.search(dn, ldap.SCOPE_SUBTREE)
       except ldap.NO_SUCH_OBJECT:
@@ -171,6 +174,8 @@ class BaseSync:
     incorrect, a diff will be created to fix it.
     """
     entry = self._ContainerEntry()
+    if entry is None:
+      return None
     containerdn = entry[0]
     ldaprecord = self._getServerCopy(containerdn)
     if ldaprecord is None:

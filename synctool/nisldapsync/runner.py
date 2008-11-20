@@ -31,6 +31,7 @@ import hosts
 import passwd
 import automount
 import netgroup
+import ldapbase
 import syncconfigfile
 
 SYNC_MODS = {
@@ -40,6 +41,7 @@ SYNC_MODS = {
              'group':group.GroupSync,
              'appgroup':appgroup.AppGroupSync,
              'automount':automount.AutomountSync,
+             'ldapbase':ldapbase.LdapBaseSync,
             }
 
 DEBUG_LEVELS = ['debug', 'info', 'warning', 'error']
