@@ -21,6 +21,7 @@
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from threading import Thread
 import thread
+import mutex
 import time
 import logging
 
@@ -31,29 +32,37 @@ logging.basicConfig(level=logging.DEBUG)
 # Create server
 server = SimpleXMLRPCServer(("0.0.0.0", 8000))
 
-running = False
+mtx = mutex.mutex()
 
 class syncthread(Thread):
-  def __init__(self, modules=[]):
+  def __init__(self, mutx, modules=[]):
     Thread.__init__(self)
     self.modules=modules
+    self.mtx = mutx
 
   def run(self):
-    global running
-    running = True
-    runner = nisldapsync.runner.Runner()
-    runner.remoteexec(self.modules)
-    running = False
+    if self.mtx.testandset():
+      runner = nisldapsync.runner.Runner()
+      runner.remoteexec(self.modules, 'debug')
+      self.mtx.unlock()
 
 # Register a function under a different name
 def init_sync(x=[]):
-  if not running:
-    p = syncthread(x)
+  if not mtx.test():
+    p = syncthread(mtx, modules=x)
     p.start()
     return 'ok'
-  return 'running'
+  else:
+    return 'running'
 
-server.register_function(init_sync, 'init')
+def check_sync():
+  if not mtx.test():
+    return 'idle'
+  else:
+    return 'running'
+
+server.register_function(init_sync, 'start')
+server.register_function(check_sync, 'check')
 
 # Run the server's main loop
 server.serve_forever()

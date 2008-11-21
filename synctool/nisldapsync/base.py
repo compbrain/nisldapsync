@@ -63,7 +63,7 @@ class BaseSync:
     return self._ldapcache
 
   def _getLogger(self, mapname):
-    return logging.getLogger('ldap.mod-%s' % mapname)
+    return logging.getLogger('ldapsync.mod-%s' % mapname)
 
   def _getServerCopy(self, dnquery):
     self._populateLDAPCache()

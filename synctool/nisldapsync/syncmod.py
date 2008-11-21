@@ -18,10 +18,12 @@
 # Free Software Foundation, Inc.
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import logging
 import syncldap
 
 class SyncMod:
   def __init__(self, dn, type, changeobj=None):
+    self._l = logging.getLogger('ldapsync.syncmod')
     self._dn = dn
     
     assert type in ['ADD', 'MOD', 'DEL']
@@ -39,8 +41,8 @@ class SyncMod:
     return self._change
 
   def apply(self):
-    print ' **** APPLYING CHANGE TO %s' % self._dn
-    print ' **** TYPE: %s' % self._type
+    self._l.debug('Changing DN: %s' % self._dn)
+    self._l.debug('Changing Type: %s' % self._type)
     l = syncldap.SyncLDAP() 
     if self._type == 'ADD':
       assert self._change is not None
@@ -49,7 +51,6 @@ class SyncMod:
       l.delete(self._dn)
     elif self._type == 'MOD':
       assert self._change is not None
-      print 'MMMM: %s' % (str(self._change))
       l.change(self._dn, self._change)
     l.close()
 

@@ -19,8 +19,11 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import xmlrpclib
-
+import sys
 s = xmlrpclib.Server('http://localhost:8000')
-print s.init(['passwd'])
+
+print s.check()
+if len(sys.argv) > 1:
+  print s.start([])
 
 

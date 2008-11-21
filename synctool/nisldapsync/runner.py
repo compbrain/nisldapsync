@@ -156,7 +156,8 @@ class Runner:
     else:
       self.applychangedict(changedict, pretend)
 
-  def remoteexec(self, modules=[]):
+  def remoteexec(self, modules=[], loglevel='error'):
+    self._set_debug_level(loglevel)
     self._run('error', modules, False, False)
 
   def main(self):
