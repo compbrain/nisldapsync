@@ -72,21 +72,13 @@ class NetgroupSync(base.BaseSync):
     return records
 
   def _NetgroupToLDAPEntry(self, netgroup_name, netgroup_triples):
-    objectclasses = ['top','nisNetgroup']
-    triples = []
-    users = []
     entry = {}
+    triples = []
+    entry['objectClass'] = ['top','nisNetgroup']
     dn = 'cn=%s,%s,%s' % (netgroup_name, self._baseou, self._ldapbase)
     entry['cn'] = [netgroup_name]
     for triple in netgroup_triples:
       triples.append('(%s,%s,%s)' % (triple[0], triple[1], triple[2]))
-      if triple[1] != '':
-        users.append('uid=%s,%s,%s' % (triple[1], self._peopleou, self._ldapbase))
-        if 'groupOfNames' not in objectclasses:
-          objectclasses.append('groupOfNames')
-    entry['objectClass'] = objectclasses
-    if len(users) > 0:
-      entry['member'] = users
     if len(triples) == 0:
       triples.append('(,%s,shadow)' % constants.EMPTY_USER_NAME)
     entry['nisNetgroupTriple'] = triples
