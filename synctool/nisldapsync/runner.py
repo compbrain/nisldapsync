@@ -158,7 +158,7 @@ class Runner:
 
   def remoteexec(self, modules=[], loglevel='error'):
     self._set_debug_level(loglevel)
-    self._run('error', modules, False, False)
+    self._run(loglevel, modules, False, False)
 
   def main(self):
     ''' Create a parser and handle user input '''
