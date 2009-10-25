@@ -41,6 +41,14 @@ class SyncDaemon(object):
     self.modules = ['passwd', 'automount', 'group', 'appgroup', 'hosts', 
                     'ldapbase']
     self.mutex = mutex.mutex()
+    self.lastsync = 0
+
+  def CheckOutOfDate(self):
+    delta = time.time() - self.lastsync
+    if delta >= 600:
+      logging.error('More than 10 minutes since last successful sync!'
+                    ' Quitting to avoid stuck mutex. %d' % delta)
+      os.abort()
 
   def DoSync(self):
     if self.mutex.testandset():
@@ -49,8 +57,10 @@ class SyncDaemon(object):
       runner.remoteexec(self.modules, 'debug')
       logging.info('Sync run complete')
       self.mutex.unlock()
+      self.lastsync = time.time()
     else:
       logging.warning('Could not start sync, already running')
+      self.CheckOutOfDate()
 
   def Run(self):
     while True:
